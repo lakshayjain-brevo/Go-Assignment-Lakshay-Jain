@@ -17,11 +17,6 @@ func newMockStore() *mockStore {
 	return &mockStore{data: make(map[string]string)}
 }
 
-func (m *mockStore) Save(hash, input string) error {
-	m.data[hash] = input
-	return nil
-}
-
 func (m *mockStore) SaveIfNotExists(hash, input string) (bool, error) {
 	if m.storeFull {
 		return false, store.ErrStoreFull
@@ -71,16 +66,30 @@ func TestGenerateHash(t *testing.T) {
 			input:   string(make([]byte, maxInputLen+1)),
 			wantErr: ErrInvalidInput,
 		},
+		{
+			name: "store full returns ErrStoreFull",
+			input: "hello",
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			svc := NewService(newMockStore())
-			resp, err := svc.GenerateHash(tc.input)
-			if !errors.Is(err, tc.wantErr) {
-				t.Errorf("err = %v, want %v", err, tc.wantErr)
+			ms := newMockStore()
+			if tc.name == "store full returns ErrStoreFull" {
+				ms.storeFull = true
 			}
-			if tc.wantErr == nil {
+			svc := NewService(ms)
+			resp, err := svc.GenerateHash(tc.input)
+
+			wantErr := tc.wantErr
+			if tc.name == "store full returns ErrStoreFull" {
+				wantErr = ErrStoreFull
+			}
+
+			if !errors.Is(err, wantErr) {
+				t.Errorf("err = %v, want %v", err, wantErr)
+			}
+			if wantErr == nil {
 				if resp == nil {
 					t.Fatal("expected non-nil response")
 				}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"hashGenerationService/internal/model"
 	"hashGenerationService/internal/store"
 	"hashGenerationService/internal/utils"
@@ -17,6 +18,7 @@ var (
 	ErrInvalidInput       = errors.New("input must be alphanumeric")
 	ErrMaxRetriesExceeded = errors.New("failed to generate a unique hash after 5 retries")
 	ErrHashNotFound       = errors.New("hash not found")
+	ErrStoreFull          = fmt.Errorf("service is at capacity: %w", store.ErrStoreFull)
 
 	alphanumericRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 )
@@ -45,6 +47,9 @@ func (s *Service) GenerateHash(input string) (*model.HashResponse, error) {
 
 		saved, err := s.store.SaveIfNotExists(hash, input)
 		if err != nil {
+			if errors.Is(err, store.ErrStoreFull) {
+				return nil, ErrStoreFull
+			}
 			return nil, err
 		}
 		if saved {

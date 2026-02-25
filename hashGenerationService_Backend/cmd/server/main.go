@@ -24,8 +24,11 @@ func main() {
 	mux.HandleFunc("GET /hash/{hash}", h.GetHash)
 
 	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: middleware.CORS(mux),
+		Addr:         ":8080",
+		Handler:      middleware.CORS(mux),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	go func() {

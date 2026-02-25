@@ -52,6 +52,8 @@ func (h *Handler) GenerateHash(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusBadRequest, err.Error())
 		case errors.Is(err, service.ErrMaxRetriesExceeded):
 			respondError(w, http.StatusConflict, err.Error())
+		case errors.Is(err, service.ErrStoreFull):
+			respondError(w, http.StatusServiceUnavailable, "service is at capacity")
 		default:
 			respondError(w, http.StatusInternalServerError, "internal server error")
 		}

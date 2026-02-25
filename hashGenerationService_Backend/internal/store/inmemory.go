@@ -20,13 +20,6 @@ func NewInMemoryStore() *InMemoryStore {
 	}
 }
 
-func (s *InMemoryStore) Save(hash, input string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data[hash] = input
-	return nil
-}
-
 func (s *InMemoryStore) SaveIfNotExists(hash, input string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
