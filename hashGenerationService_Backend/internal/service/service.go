@@ -8,7 +8,10 @@ import (
 	"regexp"
 )
 
-const maxRetries = 5
+const (
+	maxRetries  = 5
+	maxInputLen = 256
+)
 
 var (
 	ErrInvalidInput       = errors.New("input must be alphanumeric")
@@ -27,6 +30,9 @@ func NewService(s store.Store) *Service {
 }
 
 func (s *Service) GenerateHash(input string) (*model.HashResponse, error) {
+	if len(input) > maxInputLen {
+		return nil, ErrInvalidInput
+	}
 	if !alphanumericRe.MatchString(input) {
 		return nil, ErrInvalidInput
 	}
@@ -37,13 +43,25 @@ func (s *Service) GenerateHash(input string) (*model.HashResponse, error) {
 			return nil, err
 		}
 
-		if !s.store.Exists(hash) {
-			if err := s.store.Save(hash, input); err != nil {
-				return nil, err
-			}
+		saved, err := s.store.SaveIfNotExists(hash, input)
+		if err != nil {
+			return nil, err
+		}
+		if saved {
 			return &model.HashResponse{Input: input, Hash: hash}, nil
 		}
 	}
 
 	return nil, ErrMaxRetriesExceeded
+}
+
+func (s *Service) GetHash(hash string) (*model.HashResponse, error) {
+	input, err := s.store.Get(hash)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return nil, ErrHashNotFound
+		}
+		return nil, err
+	}
+	return &model.HashResponse{Input: input, Hash: hash}, nil
 }

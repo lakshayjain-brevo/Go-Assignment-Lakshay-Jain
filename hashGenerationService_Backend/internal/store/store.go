@@ -1,6 +1,11 @@
 package store
 
+import "errors"
+
+var ErrNotFound = errors.New("hash not found")
+
 type Store interface {
 	Save(hash, input string) error
-	Exists(hash string) bool
+	SaveIfNotExists(hash, input string) (bool, error)
+	Get(hash string) (string, error)
 }

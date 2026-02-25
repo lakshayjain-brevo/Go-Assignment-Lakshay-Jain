@@ -1,15 +1,24 @@
 package middleware
 
-import "net/http"
+import (
+	"net/http"
+	"os"
+)
 
-// CORS wraps a handler to allow cross-origin requests from the React dev server.
+// CORS wraps a handler to allow cross-origin requests.
+// The allowed origin is read from the CORS_ORIGIN environment variable;
+// it falls back to http://localhost:5173 for local development.
 func CORS(next http.Handler) http.Handler {
+	origin := os.Getenv("CORS_ORIGIN")
+	if origin == "" {
+		origin = "http://localhost:5173"
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-		// Handle preflight
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return

@@ -1,6 +1,13 @@
 package store
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
+
+const maxEntries = 10_000
+
+var ErrStoreFull = errors.New("store is at capacity")
 
 type InMemoryStore struct {
 	data map[string]string
@@ -20,9 +27,25 @@ func (s *InMemoryStore) Save(hash, input string) error {
 	return nil
 }
 
-func (s *InMemoryStore) Exists(hash string) bool {
+func (s *InMemoryStore) SaveIfNotExists(hash, input string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data[hash]; exists {
+		return false, nil
+	}
+	if len(s.data) >= maxEntries {
+		return false, ErrStoreFull
+	}
+	s.data[hash] = input
+	return true, nil
+}
+
+func (s *InMemoryStore) Get(hash string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	_, ok := s.data[hash]
-	return ok
+	input, ok := s.data[hash]
+	if !ok {
+		return "", ErrNotFound
+	}
+	return input, nil
 }
